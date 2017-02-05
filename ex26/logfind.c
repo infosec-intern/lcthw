@@ -87,9 +87,13 @@ int build_cli(int argc, char* argv[], int* or_flag, char*** terms_addr)
 	if (argc < 2)
 		return 1;
 
-	int i = 0;
+	int count = 0;
 	char** terms = malloc(SEARCH_TERMS_MAX*sizeof(char**));
 	int opt;
+
+	debug("count = %d", count);
+	for(count = 0; count < SEARCH_TERMS_MAX; count++)
+		debug("terms[%d] = %s = %p", count, terms[count], terms[count]);
 
 	// examine each argument looking for our "OR" flag
 	while((opt = getopt(argc, argv, "-o")) != -1) {
@@ -99,57 +103,69 @@ int build_cli(int argc, char* argv[], int* or_flag, char*** terms_addr)
 				break;
 			// treat any non-flag argument as a term to search
 			default:
-				if (i >= SEARCH_TERMS_MAX) {
+				if (count >= SEARCH_TERMS_MAX) {
 					debug("Maximum search terms reached!. Skipping \"%s\" @ argv[%d]", optarg, optind-1);
 					break;
 				}
-				terms[i] = malloc(strlen(optarg)*sizeof(char));
-				strncpy(terms[i], optarg, strlen(optarg));
-				i++;
+				terms[count] = malloc(strlen(optarg)*sizeof(char));
+				strncpy(terms[count], optarg, strlen(optarg));
+				debug("Copied %s into terms[%d]", optarg, count);
+				count++;
 				break;
 		}
 	}
+	debug("count = %d", count);
 
 	*terms_addr = terms;
-	return 0;
+	debug("count = %d", count);
+	return count;
 }
 
 int main(int argc, char *argv[])
 {
 	int i = 0;
-	int error = -1;
-	int count = 0;
+	int term_count = 0;
+	int glob_count = 0;
 	int or_flag = 0;
 	char** globs = malloc(GLOB_MAX*sizeof(char*));
 	char** terms = malloc(sizeof(char**));
 	char* config_path = "/home/thomas/.logfind";
 //	const char* config_path = "~/.logfind";
 
-	error = build_cli(argc, argv, &or_flag, &terms);
-	check(error == 0, "Usage: %s <term1> <term2> ...", argv[0]);
+	term_count = build_cli(argc, argv, &or_flag, &terms);
+	check(term_count > 0, "Usage: %s <term1> <term2> ...", argv[0]);
 
-	for (i=0; i<SEARCH_TERMS_MAX; i++)
+	for (i = 0; i < term_count; i++)
 		debug("term[%d] = %s @ %p", i, terms[i], terms[i]);
+	log_info("Found %d terms", term_count);
 
 	if (or_flag == 1)
 		debug("OR flag set!");
 	else
 		debug("AND flag set!");
 
-	count = load_config(config_path, globs);
-	check(count > 0, "No glob patterns loaded!");
+	glob_count = load_config(config_path, globs);
+	check(glob_count > 0, "No glob patterns loaded!");
 
-	for(i = 0; i < count; i++) 
+	for(i = 0; i < glob_count; i++) 
 		debug("glob[%d] = %s", i, globs[i]);
-	log_info("Found %d globs in %s", count, config_path);
+	log_info("Found %d globs in %s", glob_count, config_path);
 	
 	// clean up
-	for(i = 0; i < count; i++) 
+	for(i = 0; i < glob_count; i++) 
 		free(globs[i]);
+
+	for(i = 0; i < term_count; i++)
+		debug("Freed terms[%d]", i);
+
 	return 0;
 
 error:
-	for(i = 0; i < count; i++)
+	for(i = 0; i < glob_count; i++)
 		free(globs[i]);
+
+	for(i = 0; i < term_count; i++)
+		free(terms[i]);
+
 	return 1;
 }
