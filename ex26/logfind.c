@@ -70,45 +70,17 @@ error:
 	return -1;
 }
 
-/* Generate a basic configuration file at ~/.logfind
- * Only include some basic glob patterns
- *
- * Output
- * 		error: 0 means the function was successful. Anything else is an error
- */
-int gen_config(void)
-{
-	FILE* logfind = NULL;
-	char* c_glob = "*.c";
-	char* h_glob = "*.h";
-	char* makefile = "Makefile";
-
-	// open config file for writing
-	logfind = fopen("/home/thomas/.logfind", "w+b");
-	check(logfind != NULL, "Couldn't open .logfind");
-
-	// write some basic glob patterns
-	fprintf(logfind, "%s\n", c_glob);
-	fprintf(logfind, "%s\n", h_glob);
-	fprintf(logfind, "%s\n", makefile);
-
-	// clean up
-	fclose(logfind);
-	return 0;
-
-error:
-	c_glob = NULL;
-	h_glob = NULL;
-	makefile = NULL;
-	if (logfind != NULL) {
-		fclose(logfind);
-	}
-	return -1;
-}
-
 /* Parse command line arguments for search terms
  * Takes any sequence of words and applies "and" to them
  * Allow the option to "or" words with a -o flag
+ *
+ * Input
+ * 		argc: same as in main
+ * 		argv: same as in main
+ *		or_flag: address to store OR flag value in (1 for OR, 0 for AND)
+ *		terms_addr: address to store terms string array in
+ *	Output
+ *		error: any errors returned. 0 means the function ran successfully
  */
 int build_cli(int argc, char* argv[], int* or_flag, char*** terms_addr)
 {
@@ -164,7 +136,6 @@ int main(int argc, char *argv[])
 	else
 		debug("AND flag set!");
 
-//	error = gen_config();
 	count = load_config(config_path, globs);
 	check(count > 0, "No glob patterns loaded!");
 
