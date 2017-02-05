@@ -39,7 +39,6 @@ int load_config(char* config_path, char** globs)
 
 	// resolve an absolute path to our config and open it for reading	
 	realpath(config_path, resolved_path);
-//	debug("Config file found at \"%s\"", resolved_path);
 	logfind = fopen(resolved_path, "r");
 	check(logfind != NULL, "Couldn't open .logfind");
 
@@ -49,7 +48,6 @@ int load_config(char* config_path, char** globs)
 		// remove \n characters from string
 		tokenized = strtok(buffer, "\n");
 		globs[count] = malloc(strlen(tokenized)*sizeof(char));
-//		debug("copying %s into globs[%d]", tokenized, count);
 		strncpy(globs[count], tokenized, strlen(tokenized));
 		count++;
 	}
@@ -101,7 +99,6 @@ int build_cli(int argc, char* argv[], int* or_flag, char*** terms_addr)
 			// treat any non-flag argument as a term to search
 			default:
 				if (count >= SEARCH_TERMS_MAX) {
-//					debug("Maximum search terms reached!. Skipping \"%s\" @ argv[%d]", optarg, optind-1);
 					break;
 				}
 				terms[count] = malloc(strlen(optarg)*sizeof(char));
@@ -131,7 +128,6 @@ glob_t* expand_globs(char** patterns, int psize)
 	glob_t* globs = malloc(GLOB_MAX*sizeof(glob_t));
 
 	for (i = 0; i < psize; i++) {
-//		debug("pattern[%d] = %s", i, patterns[i]);
 		result = glob(patterns[i], GLOB_TILDE_CHECK, NULL, &globs[i]);
 		if (result == GLOB_NOMATCH) {
 			log_err("No matches for \"%s\" found", patterns[i]);
@@ -147,7 +143,6 @@ glob_t* expand_globs(char** patterns, int psize)
 
 error:
 	for (i = 0; i < count; i++) {
-		debug("freeing glob[%d] @ %p", i, globs[i]);
 		globfree(&globs[i]);
 	}
 	return NULL;
@@ -171,7 +166,6 @@ void search_files(glob_t* globs, char* term)
 		if (globs[i].gl_pathc > 0) {
 			for (j = 0; j < globs[i].gl_pathc; j++) {
 				filename = globs[i].gl_pathv[j];
-				debug("globs[%d].gl_pathv[%d] = %s", i, j, filename);
 				// open a file matching the current glob
 				fp = fopen(filename, "r");
 				if (fp == NULL) {
