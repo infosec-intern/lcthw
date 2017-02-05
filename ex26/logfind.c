@@ -15,7 +15,7 @@
 
 int load_config(char*, char**);
 int build_cli(int, char*[], int*, char***);
-int expand_globs(char**, int, glob_t*);
+glob_t* expand_globs(char**, int);
 
 
 /* Load a configuration file from ~/.logfind
@@ -119,22 +119,21 @@ int build_cli(int argc, char* argv[], int* or_flag, char*** terms_addr)
  * Input
  * 		patterns: an array of pattern strings to convert
  * 		psize: length of patterns array. helps in for loops
- * 		glob_ptr: pointer to an empty array. Will point to our array of globs we create
  * Output
- * 		count: number of globs created
+ * 		glob_ptr: pointer to an array of globs we create
  */
-int expand_globs(char** patterns, int psize, glob_t* globs)
+glob_t* expand_globs(char** patterns, int psize)
 {
 	int i = 0;
 	int count = 0;
 	int result;
-//	glob_t* globs = malloc(GLOB_MAX*sizeof(glob_t));
+	glob_t* globs = malloc(GLOB_MAX*sizeof(glob_t));
 
 	for(i = 0; i < psize; i++) {
 		debug("pattern[%d] = %s", i, patterns[i]);
 		result = glob(patterns[i], GLOB_TILDE_CHECK, NULL, &globs[i]);
 		if (result == GLOB_NOMATCH) {
-			log_err("No matches for %s found. Moving on", patterns[i]);
+			log_err("No matches for \"%s\" found", patterns[i]);
 			continue;
 		}
 		check(result != GLOB_NOSPACE, "glob() ran out of memory!");
@@ -143,17 +142,14 @@ int expand_globs(char** patterns, int psize, glob_t* globs)
 		count++;
 	}
 
-	debug("Counted %d globs");
-	debug("[2] globs* located at %p", globs);
-
-	return count;
+	return globs;
 
 error:
 	for(i = 0; i < count; i++) {
-		debug("freeing glob %d @ %p", i, &globs[i]);
+		debug("freeing glob[%d] @ %p", i, globs[i]);
 		globfree(&globs[i]);
 	}
-	return -1;
+	return NULL;
 }
 
 int main(int argc, char *argv[])
@@ -161,13 +157,12 @@ int main(int argc, char *argv[])
 	int i = 0;
 	int term_count = 0;
 	int pattern_count = 0;
-	int glob_count = 0;
 	int or_flag = 0;
 	char* config_path = "/home/thomas/.logfind";
+//	const char* config_path = "~/.logfind";
 	char** patterns = malloc(GLOB_MAX*sizeof(char*));
 	char** terms = malloc(sizeof(char**));
-	glob_t* globs = malloc(GLOB_MAX*sizeof(glob_t));
-//	const char* config_path = "~/.logfind";
+	glob_t* globs;
 
 	// meat and potatoes
 	term_count = build_cli(argc, argv, &or_flag, &terms);
@@ -176,24 +171,21 @@ int main(int argc, char *argv[])
 	pattern_count = load_config(config_path, patterns);
 	check(pattern_count > 0, "No glob patterns loaded!");
 
-	glob_count = expand_globs(patterns, pattern_count, &globs);
-	debug("[1] globs* located at %p", *globs);
-	check(glob_count == pattern_count, "Some globs could not be created!");
-	debug("[3] globs* located at %p", *globs);
+	globs = expand_globs(patterns, pattern_count);
+	check(globs != NULL, "No globs could be created!");
 
 	// summary
 	log_info("Found %d patterns in %s", pattern_count, config_path);
 	log_info("Found %d terms", term_count);
-	log_info("Generated %d globs", glob_count);
 	
 	// clean up
 	for(i = 0; i < pattern_count; i++) 
 		free(patterns[i]);
 	for(i = 0; i < term_count; i++)
 		free(terms[i]);
-	for(i = 0; i < glob_count; i++) {
-		debug("freeing glob %d @ %p", i, globs[i]);
-		globfree(&globs[i]);
+	for(i = 0; i < GLOB_MAX; i++) {
+		if (globs[i].gl_pathc > 0)
+			globfree(&globs[i]);
 	}
 
 	return 0;
@@ -203,9 +195,9 @@ error:
 		free(patterns[i]);
 	for(i = 0; i < term_count; i++)
 		free(terms[i]);
-	for(i = 0; i < glob_count; i++) {
-		debug("freeing glob %d @ %p", i, globs[i]);
-		globfree(&globs[i]);
+	for(i = 0; i < GLOB_MAX; i++) {
+		if (globs[i].gl_pathc > 0)
+			globfree(&globs[i]);
 	}
 
 	return 1;
