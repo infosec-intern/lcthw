@@ -15,7 +15,7 @@
 
 int load_config(char*, char**);
 int gen_config(void);
-int build_cli(int, char*[], int*);
+int build_cli(int, char*[], int*, char***);
 
 
 /* Load a configuration file from ~/.logfind
@@ -110,7 +110,7 @@ error:
  * Takes any sequence of words and applies "and" to them
  * Allow the option to "or" words with a -o flag
  */
-int build_cli(int argc, char* argv[], int* or_flag)
+int build_cli(int argc, char* argv[], int* or_flag, char*** terms_addr)
 {
 	if (argc < 2)
 		return 1;
@@ -138,22 +138,8 @@ int build_cli(int argc, char* argv[], int* or_flag)
 		}
 	}
 
-	for (i=0; i<SEARCH_TERMS_MAX; i++)
-		debug("term[%d] = %s @ %p", i, terms[i], terms[i]);
-
+	*terms_addr = terms;
 	return 0;
-
-error:
-	if (terms != NULL) {
-		debug("Freeing up terms @ %p", terms);
-		for (i=0; i<SEARCH_TERMS_MAX; i++) {
-			if (terms[i] != NULL) {
-				debug("Freeing memory for terms[%d] = %s @ %p", i, terms[i], terms[i]);
-				free(terms[i]);
-			}
-		}
-	}
-	return 1;
 }
 
 int main(int argc, char *argv[])
@@ -167,8 +153,11 @@ int main(int argc, char *argv[])
 	char* config_path = "/home/thomas/.logfind";
 //	const char* config_path = "~/.logfind";
 
-	error = build_cli(argc, argv, &or_flag);
+	error = build_cli(argc, argv, &or_flag, &terms);
 	check(error == 0, "Usage: %s <term1> <term2> ...", argv[0]);
+
+	for (i=0; i<SEARCH_TERMS_MAX; i++)
+		debug("term[%d] = %s @ %p", i, terms[i], terms[i]);
 
 	if (or_flag == 1)
 		debug("OR flag set!");
