@@ -14,7 +14,6 @@
 #define SEARCH_TERMS_MAX 5
 
 int load_config(char*, char**);
-int gen_config(void);
 int build_cli(int, char*[], int*, char***);
 
 
@@ -125,23 +124,24 @@ int main(int argc, char *argv[])
 	char* config_path = "/home/thomas/.logfind";
 //	const char* config_path = "~/.logfind";
 
+	// meat and potatoes
 	term_count = build_cli(argc, argv, &or_flag, &terms);
 	check(term_count > 0, "Usage: %s <term1> <term2> ...", argv[0]);
 
+	glob_count = load_config(config_path, globs);
+	check(glob_count > 0, "No glob patterns loaded!");
+
+	// summary
 	if (or_flag == 1)
 		debug("OR flag set!");
 	else
 		debug("AND flag set!");
-
-	glob_count = load_config(config_path, globs);
-	check(glob_count > 0, "No glob patterns loaded!");
 
 	for(i = 0; i < term_count; i++) 
 		debug("term[%d] = %s", i, terms[i]);
 	for(i = 0; i < glob_count; i++) 
 		debug("glob[%d] = %s", i, globs[i]);
 
-	// summary
 	log_info("Found %d globs in %s", glob_count, config_path);
 	log_info("Found %d terms", term_count);
 	
