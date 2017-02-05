@@ -16,6 +16,7 @@
 int load_config(char*, char**);
 int build_cli(int, char*[], int*, char***);
 glob_t* expand_globs(char**, int);
+void search_files(glob_t*, char*);
 
 
 /* Load a configuration file from ~/.logfind
@@ -129,8 +130,8 @@ glob_t* expand_globs(char** patterns, int psize)
 	int result;
 	glob_t* globs = malloc(GLOB_MAX*sizeof(glob_t));
 
-	for(i = 0; i < psize; i++) {
-		debug("pattern[%d] = %s", i, patterns[i]);
+	for (i = 0; i < psize; i++) {
+//		debug("pattern[%d] = %s", i, patterns[i]);
 		result = glob(patterns[i], GLOB_TILDE_CHECK, NULL, &globs[i]);
 		if (result == GLOB_NOMATCH) {
 			log_err("No matches for \"%s\" found", patterns[i]);
@@ -145,11 +146,46 @@ glob_t* expand_globs(char** patterns, int psize)
 	return globs;
 
 error:
-	for(i = 0; i < count; i++) {
+	for (i = 0; i < count; i++) {
 		debug("freeing glob[%d] @ %p", i, globs[i]);
 		globfree(&globs[i]);
 	}
 	return NULL;
+}
+
+/* Search all files matching glob patterns for search term(s)
+ * Number of terms is variable, and we need to search for each one
+ *
+ * Input
+ * 		globs: array of globs
+ * 		term: search term
+ */
+void search_files(glob_t* globs, char* term)
+{
+	int i = 0;
+	int j = 0;
+	FILE* fp;
+	char* filename = malloc(PATH_MAX*sizeof(char));
+
+	for (i = 0; i < GLOB_MAX; i++) {
+		if (globs[i].gl_pathc > 0) {
+			for (j = 0; j < globs[i].gl_pathc; j++) {
+				filename = globs[i].gl_pathv[j];
+				debug("globs[%d].gl_pathv[%d] = %s", i, j, filename);
+				// open a file matching the current glob
+				fp = fopen(filename, "r");
+				if (fp == NULL) {
+				   log_err("Cannot open input file: \"%s\"", filename);
+				}
+				else {
+					debug("Successfully opened %s", filename);
+					fclose(fp);
+				}
+			}
+		}
+	}
+
+	return;
 }
 
 int main(int argc, char *argv[])
@@ -175,15 +211,20 @@ int main(int argc, char *argv[])
 	check(globs != NULL, "No globs could be created!");
 
 	// summary
+	log_info("%s flag set", (or_flag == 1) ? "OR" : "AND");		// ternary, bitches
 	log_info("Found %d patterns in %s", pattern_count, config_path);
 	log_info("Found %d terms", term_count);
+
+	// perform search
+	for (i = 0; i < term_count; i++)
+		search_files(globs, terms[i]);
 	
 	// clean up
-	for(i = 0; i < pattern_count; i++) 
+	for (i = 0; i < pattern_count; i++) 
 		free(patterns[i]);
-	for(i = 0; i < term_count; i++)
+	for (i = 0; i < term_count; i++)
 		free(terms[i]);
-	for(i = 0; i < GLOB_MAX; i++) {
+	for (i = 0; i < GLOB_MAX; i++) {
 		if (globs[i].gl_pathc > 0)
 			globfree(&globs[i]);
 	}
@@ -191,11 +232,11 @@ int main(int argc, char *argv[])
 	return 0;
 
 error:
-	for(i = 0; i < pattern_count; i++)
+	for (i = 0; i < pattern_count; i++)
 		free(patterns[i]);
-	for(i = 0; i < term_count; i++)
+	for (i = 0; i < term_count; i++)
 		free(terms[i]);
-	for(i = 0; i < GLOB_MAX; i++) {
+	for (i = 0; i < GLOB_MAX; i++) {
 		if (globs[i].gl_pathc > 0)
 			globfree(&globs[i]);
 	}
