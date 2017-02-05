@@ -1,12 +1,11 @@
 #include <stdio.h>
-#include <stdlib.h>
+#include <stdlib.h>			// getenv
 #include <string.h>			// strtok, strncpy
 #include <glob.h>			// glob
 #include <unistd.h>			// getopt
+#include <linux/limits.h>	// PATH_MAX
 #include "dbg.h"			// debug, check, log_err
 
-// going off of FAT filesystem paths -- modern systems can handle longer paths
-#define PATH_MAX 256
 // an upper limit on glob patterns makes things easier for me
 #define GLOB_MAX 10
 // lines can only be LINE_LENGTH characters long before getting truncated
@@ -111,41 +110,48 @@ error:
  * Takes any sequence of words and applies "and" to them
  * Allow the option to "or" words with a -o flag
  */
-int build_cli(int argc, char* argv[])
+int build_cli(int argc, char* argv[], int* or_flag)
 {
 	if (argc < 2)
-		check(error == 0, "Usage: %s <term1> <term2> ...", argv[0]);
+		return 1;
 
 	int i = 0;
-	char* terms = malloc(SEARCH_TERMS_MAX*sizeof(char*));
+	char** terms = malloc(SEARCH_TERMS_MAX*sizeof(char**));
 	int opt;
-	int length;
 
 	// examine each argument looking for our "OR" flag
 	while((opt = getopt(argc, argv, "-o")) != -1) {
-		debug("Option: %s", optarg);
 		switch(opt) {
 			case 'o':
-				debug("Found -o flag! %c in argv[%d]", (char)opt, optind-1);
 				*or_flag = 1;
 				break;
 			// treat any non-flag argument as a term to search
 			default:
-				length = strlen(optarg)+1;
-				terms[i] = malloc(length*sizeof(char));
-				strncpy(terms[i], optarg, length);
+				if (i >= SEARCH_TERMS_MAX) {
+					debug("Maximum search terms reached!. Skipping \"%s\" @ argv[%d]", optarg, optind-1);
+					break;
+				}
+				terms[i] = malloc(strlen(optarg)*sizeof(char));
+				strncpy(terms[i], optarg, strlen(optarg));
 				i++;
 				break;
 		}
 	}
 
+	for (i=0; i<SEARCH_TERMS_MAX; i++)
+		debug("term[%d] = %s @ %p", i, terms[i], terms[i]);
+
 	return 0;
 
 error:
-	for (i=0; i<SEARCH_TERMS_MAX; i++) {
-		debug("Freeing memory for terms[%d] = %s", i, terms[i]);
-		if (terms[i] != NULL)
-			free(terms[i]);
+	if (terms != NULL) {
+		debug("Freeing up terms @ %p", terms);
+		for (i=0; i<SEARCH_TERMS_MAX; i++) {
+			if (terms[i] != NULL) {
+				debug("Freeing memory for terms[%d] = %s @ %p", i, terms[i], terms[i]);
+				free(terms[i]);
+			}
+		}
 	}
 	return 1;
 }
@@ -155,12 +161,19 @@ int main(int argc, char *argv[])
 	int i = 0;
 	int error = -1;
 	int count = 0;
-	int or_flag;
+	int or_flag = 0;
 	char** globs = malloc(GLOB_MAX*sizeof(char*));
 	char** terms = malloc(sizeof(char**));
 	char* config_path = "/home/thomas/.logfind";
+//	const char* config_path = "~/.logfind";
 
-	error = build_cli(argc, argv, &or_flag, terms);
+	error = build_cli(argc, argv, &or_flag);
+	check(error == 0, "Usage: %s <term1> <term2> ...", argv[0]);
+
+	if (or_flag == 1)
+		debug("OR flag set!");
+	else
+		debug("AND flag set!");
 
 //	error = gen_config();
 	count = load_config(config_path, globs);
