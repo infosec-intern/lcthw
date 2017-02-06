@@ -123,13 +123,12 @@ void search_files(char** patterns, int pattern_count, char* term)
 {
 	int i = 0;
 	int j = 0;
-	int glob_count = 0;
-	int result;
-	int line_no = 0;
+	int success = 0;	// describes if a file matches our pattern(s). 1 = true. 0 = false
+	int line_no = 0;	// current line number we are searching
+	int result;			// result of glob()
 	FILE* fp = NULL;
 	char* current_file = malloc(PATH_MAX*sizeof(char));
 	char* current_pattern = malloc(PATH_MAX*sizeof(char));
-	// temporary buffers for lines in a file
 	char* buffer = malloc(LINE_LENGTH*sizeof(char));
 	glob_t current_glob;
 
@@ -142,8 +141,6 @@ void search_files(char** patterns, int pattern_count, char* term)
 		}
 		check(result != GLOB_NOSPACE, "glob() ran out of memory!");
 		check(result != GLOB_ABORTED, "glob() experienced a read error!");
-		// only bump glob count if all checks are passed
-		glob_count++;
 		// work on each file now
 		for (j = 0; j < current_glob.gl_pathc; j++) {
 			current_file = current_glob.gl_pathv[j];
@@ -157,9 +154,8 @@ void search_files(char** patterns, int pattern_count, char* term)
 			while (fgets(buffer, LINE_LENGTH - 1, fp) != NULL) {
 				line_no++;
 				if (strstr(buffer, term) != NULL) {
-					printf("Found search term \"%s\" in %s:%d!\n", current_pattern, current_file, line_no);
+					printf("Found search term \"%s\" in %s:%d!\n", term, current_file, line_no);
 				}
-//				debug("%d: %s", line_no, tokenized);
 			}
 			fclose(fp);
 		}
