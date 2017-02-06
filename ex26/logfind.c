@@ -166,10 +166,8 @@ void search_files(char** patterns, int pattern_count, char** terms, int term_cou
 			}
 			// if OR is set, only one term needs to exist in file
 			// if AND is set, all terms must exist in file
-			if ((or_flag == 1 && term_found > 0) || (or_flag == 0 && term_found == term_count))
+			if ((or_flag == 1 && term_found > 0) || (or_flag == 0 && term_found >= term_count))
 				log_info("%s matches!", current_file);
-			else
-				log_err("%s does NOT match!", current_file);
 
 			// reset for the next file
 			term_found = 0;
