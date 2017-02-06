@@ -193,7 +193,6 @@ int main(int argc, char *argv[])
 	char** patterns = malloc(GLOB_MAX*sizeof(char*));
 	char** terms = malloc(sizeof(char**));
 
-	// meat and potatoes
 	term_count = build_cli(argc, argv, &or_flag, &terms);
 	check(term_count > 0, "Usage: %s <term1> <term2> ...", argv[0]);
 
