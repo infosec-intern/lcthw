@@ -9,7 +9,7 @@
 // an upper limit on glob patterns makes things easier for me
 #define GLOB_MAX 10
 // lines can only be LINE_LENGTH characters long before getting truncated
-#define LINE_LENGTH 100
+#define LINE_LENGTH 512
 // an upper limit on the number of terms that can be searched
 #define SEARCH_TERMS_MAX 5
 
@@ -125,15 +125,19 @@ void search_files(char** patterns, int pattern_count, char* term)
 	int j = 0;
 	int glob_count = 0;
 	int result;
+	int line_no = 0;
 	FILE* fp = NULL;
 	char* current_file = malloc(PATH_MAX*sizeof(char));
+	char* current_pattern = malloc(PATH_MAX*sizeof(char));
+	// temporary buffers for lines in a file
+	char* buffer = malloc(LINE_LENGTH*sizeof(char));
 	glob_t current_glob;
 
 	for(i = 0; i < pattern_count; i++) {
-		debug("pattern[%d] = %s", i, patterns[i]);
-		result = glob(patterns[i], GLOB_TILDE_CHECK | GLOB_ERR, NULL, &current_glob);
+		current_pattern = patterns[i];
+		result = glob(current_pattern, GLOB_TILDE_CHECK | GLOB_ERR, NULL, &current_glob);
 		if (result == GLOB_NOMATCH) {
-			log_err("No matches for \"%s\" found", patterns[i]);
+			log_err("No matches for \"%s\" found", current_pattern);
 			continue;
 		}
 		check(result != GLOB_NOSPACE, "glob() ran out of memory!");
@@ -144,17 +148,34 @@ void search_files(char** patterns, int pattern_count, char* term)
 		for (j = 0; j < current_glob.gl_pathc; j++) {
 			current_file = current_glob.gl_pathv[j];
 			fp = fopen(current_file, "r");
-
+			if (fp == NULL) {
+				debug("Skipping %s!", current_file);
+				continue;
+			}
+			// begin searching file
+			debug("Searching \"%s\" for \"%s\"", current_file, term);
+			while (fgets(buffer, LINE_LENGTH - 1, fp) != NULL) {
+				line_no++;
+				if (strstr(buffer, term) != NULL) {
+					printf("Found search term \"%s\" in %s:%d!\n", current_pattern, current_file, line_no);
+				}
+//				debug("%d: %s", line_no, tokenized);
+			}
 			fclose(fp);
 		}
 		globfree(&current_glob);
 	}
-	debug("Found %d globs", glob_count);
 
+	free(current_file);
+	free(current_pattern);
+	free(buffer);
 	return;
 
 error:
 	free(current_file);
+	free(current_pattern);
+	free(buffer);
+
 	if (fp != NULL)
 		fclose(fp);
 
@@ -180,9 +201,9 @@ int main(int argc, char *argv[])
 	check(pattern_count > 0, "No glob patterns loaded!");
 
 	// summary
-	log_info("%s flag set", (or_flag == 1) ? "OR" : "AND");		// ternary, bitches
-	log_info("Found %d patterns in %s", pattern_count, config_path);
-	log_info("Found %d terms", term_count);
+	debug("%s flag set", (or_flag == 1) ? "OR" : "AND");		// ternary, bitches
+	debug("Found %d patterns in %s", pattern_count, config_path);
+	debug("Found %d terms", term_count);
 
 	// perform search
 	for (i = 0; i < term_count; i++)
