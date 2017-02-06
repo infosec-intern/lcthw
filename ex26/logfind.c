@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>			// getenv
-#include <string.h>			// strtok, strncpy
+#include <string.h>			// strtok, strncpy, strstr
 #include <glob.h>			// glob
 #include <unistd.h>			// getopt
 #include <linux/limits.h>	// PATH_MAX
@@ -140,17 +140,16 @@ void search_files(char** patterns, int pattern_count, char* term)
 		check(result != GLOB_ABORTED, "glob() experienced a read error!");
 		// only bump glob count if all checks are passed
 		glob_count++;
+		// work on each file now
 		for (j = 0; j < current_glob.gl_pathc; j++) {
-			debug("    glob[%d][%d] = %s", i, j, current_glob.gl_pathv[j]);
+			current_file = current_glob.gl_pathv[j];
+			fp = fopen(current_file, "r");
+
+			fclose(fp);
 		}
 		globfree(&current_glob);
 	}
 	debug("Found %d globs", glob_count);
-
-	// clean up
-	free(current_file);
-	if (fp != NULL)
-		fclose(fp);
 
 	return;
 
