@@ -15,7 +15,7 @@
 
 int load_config(char*, char**);
 int build_cli(int, char*[], int*, char***);
-void search_files(char**, int, char*);
+void search_files(char**, int, char**, int, int);
 
 
 /* Load a configuration file from ~/.logfind
@@ -117,13 +117,16 @@ int build_cli(int argc, char* argv[], int* or_flag, char*** terms_addr)
  * Input
  * 		patterns: strings that match file pattern globs
  * 		pattern_count: length of patterns array
- * 		term: search term
+ * 		terms: array of search terms
+ * 		term_count: length of terms array
+ * 		or_flag: determines how to analyze search results. 1 == OR. 0 == AND
  */
-void search_files(char** patterns, int pattern_count, char* term)
+void search_files(char** patterns, int pattern_count, char** terms, int term_count, int or_flag)
 {
 	int i = 0;
 	int j = 0;
-	int success = 0;	// describes if a file matches our pattern(s). 1 = true. 0 = false
+	int k = 0;
+	int term_found = 0;	// describes if a file matches our pattern(s). 1 = true. 0 = false
 	int line_no = 0;	// current line number we are searching
 	int result;			// result of glob()
 	FILE* fp = NULL;
@@ -132,6 +135,7 @@ void search_files(char** patterns, int pattern_count, char* term)
 	char* buffer = malloc(LINE_LENGTH*sizeof(char));
 	glob_t current_glob;
 
+	// work on each glob pattern
 	for(i = 0; i < pattern_count; i++) {
 		current_pattern = patterns[i];
 		result = glob(current_pattern, GLOB_TILDE_CHECK | GLOB_ERR, NULL, &current_glob);
@@ -150,13 +154,25 @@ void search_files(char** patterns, int pattern_count, char* term)
 				continue;
 			}
 			// begin searching file
-			debug("Searching \"%s\" for \"%s\"", current_file, term);
-			while (fgets(buffer, LINE_LENGTH - 1, fp) != NULL) {
-				line_no++;
-				if (strstr(buffer, term) != NULL) {
-					printf("Found search term \"%s\" in %s:%d!\n", term, current_file, line_no);
+			for (k = 0; k < term_count; k++) {
+				debug("Searching \"%s\" for \"%s\"", current_file, terms[k]);
+				while (fgets(buffer, LINE_LENGTH - 1, fp) != NULL) {
+					line_no++;
+					if (strstr(buffer, terms[k]) != NULL) {
+						printf("Found search term \"%s\" in %s:%d!\n", terms[k], current_file, line_no);
+						term_found++;
+					}
 				}
 			}
+			// if OR is set, only one term needs to exist in file
+			// if AND is set, all terms must exist in file
+			if ((or_flag == 1 && term_found > 0) || (or_flag == 0 && term_found == term_count))
+				log_info("%s matches!", current_file);
+			else
+				log_err("%s does NOT match!", current_file);
+
+			// reset for the next file
+			term_found = 0;
 			fclose(fp);
 		}
 		globfree(&current_glob);
@@ -201,8 +217,7 @@ int main(int argc, char *argv[])
 	debug("Found %d terms", term_count);
 
 	// perform search
-	for (i = 0; i < term_count; i++)
-		search_files(patterns, pattern_count, terms[i]);
+	search_files(patterns, pattern_count, terms, term_count, or_flag);
 	
 	// clean up
 	for (i = 0; i < pattern_count; i++) 
