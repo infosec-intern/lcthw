@@ -34,7 +34,7 @@ int load_config(char* config_path, char** globs)
 	FILE* logfind = NULL;
 	char* resolved_path	= malloc(PATH_MAX*sizeof(char));
 	char* buffer = malloc(LINE_LENGTH*sizeof(char));
-	char* tokenized = malloc(LINE_LENGTH*sizeof(char));
+	char* tokenized;
 
 	// resolve an absolute path to our config and open it for reading	
 	realpath(config_path, resolved_path);
@@ -62,9 +62,9 @@ int load_config(char* config_path, char** globs)
 error:
 	free(buffer);
 	free(resolved_path);
-	if (logfind != NULL) {
+	if (logfind != NULL)
 		fclose(logfind);
-	}
+
 	return -1;
 }
 
@@ -97,9 +97,8 @@ int build_cli(int argc, char* argv[], int* or_flag, char*** terms_addr)
 				break;
 			// treat any non-flag argument as a term to search
 			default:
-				if (count >= SEARCH_TERMS_MAX) {
+				if (count >= SEARCH_TERMS_MAX)
 					break;
-				}
 				terms[count] = malloc(strlen(optarg)*sizeof(char));
 				strncpy(terms[count], optarg, strlen(optarg));
 				count++;
@@ -232,17 +231,17 @@ int main(int argc, char *argv[])
 	
 	// clean up
 	for (i = 0; i < pattern_count; i++) 
-		free(patterns[i]);
+		if (strcmp(patterns[i], "") != 0) free(patterns[i]);
 	for (i = 0; i < term_count; i++)
-		free(terms[i]);
+		if (strcmp(terms[i], "") != 0) free(terms[i]);
 
 	return 0;
 
 error:
 	for (i = 0; i < pattern_count; i++) 
-		free(patterns[i]);
+		if (strcmp(patterns[i], "") != 0) free(patterns[i]);
 	for (i = 0; i < term_count; i++)
-		free(terms[i]);
+		if (strcmp(terms[i], "") != 0) free(terms[i]);
 
 	return 1;
 }
