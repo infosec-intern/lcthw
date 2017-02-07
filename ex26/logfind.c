@@ -162,12 +162,18 @@ void search_files(char** patterns, int pattern_count, char** terms, int term_cou
 			}
 
 			// determine if our file matches by AND or by OR
-			for (k = 0; k < term_count; k++) {
-				if (or_flag == 1)
-					file_match |= terms_found[k];
-				else
-					file_match &= terms_found[k];
+			// there's probably a more clever way of doing this
+			// the OR/AND flag really only matters with more than one term
+			if (term_count > 1) {
+				for (k = 0; k < term_count; k++) {
+					if (or_flag == 1)
+						file_match |= terms_found[k];
+					else
+						file_match &= terms_found[k];
+				}
 			}
+			else
+				file_match = terms_found[0];
 
 			if (file_match == 1)
 				printf("%s matches!\n", current_file);
@@ -185,12 +191,14 @@ void search_files(char** patterns, int pattern_count, char** terms, int term_cou
 	free(current_file);
 	free(current_pattern);
 	free(buffer);
+	free(terms_found);
 	return;
 
 error:
 	free(current_file);
 	free(current_pattern);
 	free(buffer);
+	free(terms_found);
 
 	if (fp != NULL)
 		fclose(fp);
