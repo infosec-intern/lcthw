@@ -129,8 +129,6 @@ void search_files(char** patterns, int pattern_count, char** terms, int term_cou
 	int line_no = 0;
 	// result of glob()
 	int result;
-	// hold 1 or 0 for each term found. bitwise AND or OR them all at the end
-	int* terms_found = calloc(term_count, sizeof(int));	
 	FILE* fp = NULL;
 	char* current_file = malloc(PATH_MAX*sizeof(char));
 	char* current_pattern = malloc(PATH_MAX*sizeof(char));
@@ -142,7 +140,7 @@ void search_files(char** patterns, int pattern_count, char** terms, int term_cou
 		current_pattern = patterns[i];
 		result = glob(current_pattern, GLOB_TILDE_CHECK | GLOB_ERR, NULL, &current_glob);
 		if (result == GLOB_NOMATCH) {
-			printf("No matches for \"%s\" found\n", current_pattern);
+			perror(current_pattern);
 			continue;
 		}
 		check(result != GLOB_NOSPACE, "glob() ran out of memory!");
@@ -152,39 +150,31 @@ void search_files(char** patterns, int pattern_count, char** terms, int term_cou
 			current_file = current_glob.gl_pathv[j];
 			fp = fopen(current_file, "r");
 			if (fp == NULL) {
-				printf("Skipping %s!\n", current_file);
+				perror(current_file);
 				continue;
 			}
 			// begin searching file
 			for (k = 0; k < term_count; k++) {
 				while (fgets(buffer, LINE_LENGTH - 1, fp) != NULL) {
 					line_no++;
-					if (strstr(buffer, terms[k]) != NULL)
-						terms_found[k] = 1;
+					if (strstr(buffer, terms[k]) != NULL) {
+						// with the break, the max number of matches on a file should be equal to term_count
+						file_match++;
+						// break out because we now know the term is somewhere in the file - no need to keep processing
+						break;
+					}
 				}
 			}
-			// determine if our file matches by AND or by OR
-			// there's probably a more clever way of doing this
-			// the OR/AND flag really only matters with more than one term
-			if (term_count > 1) {
-				for (k = 0; k < term_count; k++) {
-					if (or_flag == 1)
-						file_match |= terms_found[k];
-					else
-						file_match &= terms_found[k];
-				}
-			}
-			else
-				file_match = terms_found[0];
 
-			if (file_match == 1)
+			// OR flag requires just one term to match
+			// AND flag requires all terms to match
+			if ((or_flag == 1 && file_match > 0) || (or_flag != 1 && file_match == term_count))
 				printf("%s matches!\n", current_file);
 			else
 				printf("%s does not match!\n", current_file);
 
 			// reset for the next file
 			file_match = 0;
-			memset(terms_found, 0, term_count);
 			fclose(fp);
 		}
 		globfree(&current_glob);
@@ -193,14 +183,12 @@ void search_files(char** patterns, int pattern_count, char** terms, int term_cou
 	free(current_file);
 	free(current_pattern);
 	free(buffer);
-	free(terms_found);
 	return;
 
 error:
 	free(current_file);
 	free(current_pattern);
 	free(buffer);
-	free(terms_found);
 	// there's no jmp into the 'error:' label between fopen() and fclose()
 	// so there's no need to check if the file pointer is open
 	return;
