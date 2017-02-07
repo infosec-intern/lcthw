@@ -123,10 +123,14 @@ int build_cli(int argc, char* argv[], int* or_flag, char*** terms_addr)
 void search_files(char** patterns, int pattern_count, char** terms, int term_count, int or_flag)
 {
 	int i, j, k;
-	int file_match = 0;										// describes if a file matches all (or one of) our pattern(s). 1 = true. 0 = false
-	int line_no = 0;										// current line number we are searching
-	int result;												// result of glob()
-	int* terms_found = calloc(term_count, sizeof(int));		// hold 1 or 0 for each term found. bitwise AND or OR them all at the end
+	// describes if a file matches all (or one of) our pattern(s). 1 = true. 0 = false
+	int file_match = 0;
+	// current line number we are searching
+	int line_no = 0;
+	// result of glob()
+	int result;
+	// hold 1 or 0 for each term found. bitwise AND or OR them all at the end
+	int* terms_found = calloc(term_count, sizeof(int));	
 	FILE* fp = NULL;
 	char* current_file = malloc(PATH_MAX*sizeof(char));
 	char* current_pattern = malloc(PATH_MAX*sizeof(char));
@@ -159,7 +163,6 @@ void search_files(char** patterns, int pattern_count, char** terms, int term_cou
 						terms_found[k] = 1;
 				}
 			}
-
 			// determine if our file matches by AND or by OR
 			// there's probably a more clever way of doing this
 			// the OR/AND flag really only matters with more than one term
@@ -202,7 +205,6 @@ error:
 	// so there's no need to check if the file pointer is open
 	return;
 }
-
 
 int main(int argc, char *argv[])
 {
