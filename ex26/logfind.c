@@ -123,12 +123,11 @@ int build_cli(int argc, char* argv[], int* or_flag, char*** terms_addr)
  */
 void search_files(char** patterns, int pattern_count, char** terms, int term_count, int or_flag)
 {
-	int i = 0;
-	int j = 0;
-	int k = 0;
-	int term_found = 0;	// describes if a file matches our pattern(s). 1 = true. 0 = false
-	int line_no = 0;	// current line number we are searching
-	int result;			// result of glob()
+	int i, j, k;
+	int file_match = 0;										// describes if a file matches all (or one of) our pattern(s). 1 = true. 0 = false
+	int line_no = 0;										// current line number we are searching
+	int result;												// result of glob()
+	int* terms_found = calloc(term_count, sizeof(int));		// hold 1 or 0 for each term found. bitwise AND or OR them all at the end
 	FILE* fp = NULL;
 	char* current_file = malloc(PATH_MAX*sizeof(char));
 	char* current_pattern = malloc(PATH_MAX*sizeof(char));
@@ -140,7 +139,7 @@ void search_files(char** patterns, int pattern_count, char** terms, int term_cou
 		current_pattern = patterns[i];
 		result = glob(current_pattern, GLOB_TILDE_CHECK | GLOB_ERR, NULL, &current_glob);
 		if (result == GLOB_NOMATCH) {
-			log_err("No matches for \"%s\" found", current_pattern);
+			printf("No matches for \"%s\" found\n", current_pattern);
 			continue;
 		}
 		check(result != GLOB_NOSPACE, "glob() ran out of memory!");
@@ -150,27 +149,34 @@ void search_files(char** patterns, int pattern_count, char** terms, int term_cou
 			current_file = current_glob.gl_pathv[j];
 			fp = fopen(current_file, "r");
 			if (fp == NULL) {
-				debug("Skipping %s!", current_file);
+				printf("Skipping %s!\n", current_file);
 				continue;
 			}
 			// begin searching file
 			for (k = 0; k < term_count; k++) {
-				debug("Searching \"%s\" for \"%s\"", current_file, terms[k]);
 				while (fgets(buffer, LINE_LENGTH - 1, fp) != NULL) {
 					line_no++;
-					if (strstr(buffer, terms[k]) != NULL) {
-						printf("Found search term \"%s\" in %s:%d!\n", terms[k], current_file, line_no);
-						term_found++;
-					}
+					if (strstr(buffer, terms[k]) != NULL)
+						terms_found[k] = 1;
 				}
 			}
-			// if OR is set, only one term needs to exist in file
-			// if AND is set, all terms must exist in file
-			if ((or_flag == 1 && term_found > 0) || (or_flag == 0 && term_found >= term_count))
-				log_info("%s matches!", current_file);
+
+			// determine if our file matches by AND or by OR
+			for (k = 0; k < term_count; k++) {
+				if (or_flag == 1)
+					file_match |= terms_found[k];
+				else
+					file_match &= terms_found[k];
+			}
+
+			if (file_match == 1)
+				printf("%s matches!\n", current_file);
+			else
+				printf("%s does not match!\n", current_file);
 
 			// reset for the next file
-			term_found = 0;
+			file_match = 0;
+			memset(terms_found, 0, term_count);
 			fclose(fp);
 		}
 		globfree(&current_glob);
