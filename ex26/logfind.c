@@ -199,12 +199,11 @@ error:
 	free(current_pattern);
 	free(buffer);
 	free(terms_found);
-
-	if (fp != NULL)
-		fclose(fp);
-
+	// there's no jmp into the 'error:' label between fopen() and fclose()
+	// so there's no need to check if the file pointer is open
 	return;
 }
+
 
 int main(int argc, char *argv[])
 {
