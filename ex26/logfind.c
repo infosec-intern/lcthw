@@ -46,6 +46,8 @@ int load_config(char* config_path, char** globs)
 		check(count < GLOB_MAX, "Maximum number of patterns exceeded. %d >= %d", count, GLOB_MAX);
 		// remove \n characters from string
 		tokenized = strtok(buffer, "\n");
+		if (tokenized == NULL || tokenized[0] == '\0')
+			continue;
 		globs[count] = malloc(strlen(tokenized)*sizeof(char));
 		strncpy(globs[count], tokenized, strlen(tokenized));
 		count++;
@@ -124,7 +126,7 @@ void search_files(char** patterns, int pattern_count, char** terms, int term_cou
 {
 	int i, j, k;
 	// describes if a file matches all (or one of) our pattern(s). 1 = true. 0 = false
-	int file_match = 0;
+	int match = -1;
 	// current line number we are searching
 	int line_no = 0;
 	// result of glob()
@@ -157,24 +159,33 @@ void search_files(char** patterns, int pattern_count, char** terms, int term_cou
 			for (k = 0; k < term_count; k++) {
 				while (fgets(buffer, LINE_LENGTH - 1, fp) != NULL) {
 					line_no++;
+					debug("strstr(buffer, \"%s\") != NULL", terms[k]);
 					if (strstr(buffer, terms[k]) != NULL) {
-						// with the break, the max number of matches on a file should be equal to term_count
-						file_match++;
-						// break out because we now know the term is somewhere in the file - no need to keep processing
+						// with the break, the max number of matches 
+						// on a file should be equal to term_count
+						if (match == -1)
+							match = 1;
+						else
+							match++;
+						// break out because we now know the term is
+						// somewhere in the file - no need to keep processing
 						break;
 					}
 				}
+				if (match == -1)
+					match = 0;
 			}
 
 			// OR flag requires just one term to match
 			// AND flag requires all terms to match
-			if ((or_flag == 1 && file_match > 0) || (or_flag != 1 && file_match == term_count))
+			if ((or_flag == 1 && match > 0) || (or_flag != 1 && match == term_count))
 				printf("%s matches!\n", current_file);
 			else
 				printf("%s does not match!\n", current_file);
 
 			// reset for the next file
-			file_match = 0;
+			match = 0;
+			k = 0;
 			fclose(fp);
 		}
 		globfree(&current_glob);
@@ -218,20 +229,25 @@ int main(int argc, char *argv[])
 
 	// perform search
 	search_files(patterns, pattern_count, terms, term_count, or_flag);
-	
-	// clean up
-	for (i = 0; i < pattern_count; i++) 
-		if (strcmp(patterns[i], "") != 0) free(patterns[i]);
+
+	for (i = 0; i < pattern_count; i++)
+		debug("patterns[%d] @ %p = %s", i, patterns[i], patterns[i]);		
 	for (i = 0; i < term_count; i++)
-		if (strcmp(terms[i], "") != 0) free(terms[i]);
+		debug("terms[%d] @ %p = %s", i, terms[i], terms[i]);
+
+	// clean up
+	for (i = 0; i < pattern_count; i++)
+		free(patterns[i]);
+	for (i = 0; i < term_count; i++)
+		free(terms[i]);
 
 	return 0;
 
 error:
-	for (i = 0; i < pattern_count; i++) 
-		if (strcmp(patterns[i], "") != 0) free(patterns[i]);
+	for (i = 0; i < pattern_count; i++)
+		free(patterns[i]);
 	for (i = 0; i < term_count; i++)
-		if (strcmp(terms[i], "") != 0) free(terms[i]);
+		free(terms[i]);
 
 	return 1;
 }
