@@ -48,8 +48,8 @@ int load_config(const char* config_path, char** globs)
 		tokenized = strtok(buffer, "\n");
 		if (tokenized == NULL || tokenized[0] == '\0')
 			continue;
-		globs[count] = malloc(strlen(tokenized)*sizeof(char));
-		strncpy(globs[count], tokenized, strlen(tokenized));
+		globs[count] = malloc(strnlen(tokenized, LINE_LENGTH)*sizeof(char));
+		strncpy(globs[count], tokenized, strnlen(tokenized, LINE_LENGTH));
 		count++;
 	}
 
@@ -101,8 +101,8 @@ int build_cli(int argc, char* argv[], int* or_flag, char*** terms_addr)
 			default:
 				if (count >= SEARCH_TERMS_MAX)
 					break;
-				terms[count] = malloc(strlen(optarg)*sizeof(char));
-				strncpy(terms[count], optarg, strlen(optarg));
+				terms[count] = malloc(strnlen(optarg, LINE_LENGTH)*sizeof(char));
+				strncpy(terms[count], optarg, strnlen(optarg, LINE_LENGTH));
 				count++;
 				break;
 		}
@@ -125,7 +125,7 @@ int build_cli(int argc, char* argv[], int* or_flag, char*** terms_addr)
 void search_files(char** patterns, int pattern_count, char** terms, int term_count, int or_flag)
 {
 	int i, j, k;
-	int match;
+	int match = 0;
 	// current line number we are searching
 	int line_no = 0;
 	// result of glob()
