@@ -13,7 +13,7 @@
 // an upper limit on the number of terms that can be searched
 #define SEARCH_TERMS_MAX 5
 
-int load_config(char*, char**);
+int load_config(const char*, char**);
 int build_cli(int, char*[], int*, char***);
 void search_files(char**, int, char**, int, int);
 
@@ -28,7 +28,7 @@ void search_files(char**, int, char**, int, int);
  * Output
  * 		count: Number of lines found in config file
  */
-int load_config(char* config_path, char** globs)
+int load_config(const char* config_path, char** globs)
 {
 	int count = 0;
 	FILE* logfind = NULL;
@@ -132,8 +132,11 @@ void search_files(char** patterns, int pattern_count, char** terms, int term_cou
 	// result of glob()
 	int result;
 	FILE* fp = NULL;
-	char* current_file = malloc(PATH_MAX*sizeof(char));
-	char* current_pattern = malloc(PATH_MAX*sizeof(char));
+	// do NOT malloc here
+	// We'll assign a char* later instead of copying into a char[] and freeing the memory
+	char* current_file;
+	char* current_pattern;
+	// malloc here b/c we are copying into a char[] and checking its contents
 	char* buffer = malloc(LINE_LENGTH*sizeof(char));
 	glob_t current_glob;
 
@@ -159,7 +162,6 @@ void search_files(char** patterns, int pattern_count, char** terms, int term_cou
 			for (k = 0; k < term_count; k++) {
 				while (fgets(buffer, LINE_LENGTH - 1, fp) != NULL) {
 					line_no++;
-					debug("strstr(buffer, \"%s\") != NULL", terms[k]);
 					if (strstr(buffer, terms[k]) != NULL) {
 						// with the break, the max number of matches 
 						// on a file should be equal to term_count
@@ -191,17 +193,11 @@ void search_files(char** patterns, int pattern_count, char** terms, int term_cou
 		globfree(&current_glob);
 	}
 
-	free(current_file);
-	free(current_pattern);
 	free(buffer);
 	return;
 
 error:
-	free(current_file);
-	free(current_pattern);
 	free(buffer);
-	// there's no jmp into the 'error:' label between fopen() and fclose()
-	// so there's no need to check if the file pointer is open
 	return;
 }
 
@@ -211,8 +207,7 @@ int main(int argc, char *argv[])
 	int term_count = 0;
 	int pattern_count = 0;
 	int or_flag = 0;
-	char* config_path = "/home/thomas/.logfind";
-//	const char* config_path = "~/.logfind";
+	const char* config_path = "/home/thomas/.logfind";
 	char** patterns = malloc(GLOB_MAX*sizeof(char*));
 	char** terms = malloc(sizeof(char**));
 
