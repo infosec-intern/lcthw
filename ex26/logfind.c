@@ -185,10 +185,7 @@ void search_files(char** patterns, int pattern_count, char** terms, int term_cou
 		globfree(&current_glob);
 	}
 
-	free(buffer);
-	return;
-
-error:
+error:	// fallthrough
 	free(buffer);
 	return;
 }
@@ -217,19 +214,11 @@ int main(int argc, char *argv[])
 	// perform search
 	search_files(patterns, pattern_count, terms, term_count, or_flag);
 
-	// clean up
+error:	// fallthrough
 	for (i = 0; i < pattern_count; i++)
-		free(patterns[i]);
+		if (patterns[i]) free(patterns[i]);
 	for (i = 0; i < term_count; i++)
-		free(terms[i]);
+		if (terms[i]) free(terms[i]);
 
 	return 0;
-
-error:
-	for (i = 0; i < pattern_count; i++)
-		free(patterns[i]);
-	for (i = 0; i < term_count; i++)
-		free(terms[i]);
-
-	return 1;
 }
