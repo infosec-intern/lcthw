@@ -125,13 +125,12 @@ int build_cli(int argc, char* argv[], int* or_flag, char*** terms_addr)
 void search_files(char** patterns, int pattern_count, char** terms, int term_count, int or_flag)
 {
 	int i, j, k;
-	// describes if a file matches all (or one of) our pattern(s). 1 = true. 0 = false
-	int match = -1;
+	int match;
 	// current line number we are searching
 	int line_no = 0;
 	// result of glob()
 	int result;
-	FILE* fp = NULL;
+	FILE* fp;
 	// do NOT malloc here
 	// We'll assign a char* later instead of copying into a char[] and freeing the memory
 	char* current_file;
@@ -163,31 +162,24 @@ void search_files(char** patterns, int pattern_count, char** terms, int term_cou
 				while (fgets(buffer, LINE_LENGTH - 1, fp) != NULL) {
 					line_no++;
 					if (strstr(buffer, terms[k]) != NULL) {
-						// with the break, the max number of matches 
-						// on a file should be equal to term_count
-						if (match == -1)
-							match = 1;
-						else
-							match++;
-						// break out because we now know the term is
-						// somewhere in the file - no need to keep processing
+						match++;
 						break;
 					}
 				}
-				if (match == -1)
-					match = 0;
+				// MUST rewind so every term after the first can read the file
+				rewind(fp);
 			}
 
-			// OR flag requires just one term to match
-			// AND flag requires all terms to match
-			if ((or_flag == 1 && match > 0) || (or_flag != 1 && match == term_count))
-				printf("%s matches!\n", current_file);
+			if (or_flag == 1 && match > 0)
+				printf("%s matches by OR!\n", current_file);
+			else if (or_flag == 0 && match >= term_count)
+				printf("%s matches by AND!\n", current_file);
 			else
 				printf("%s does not match!\n", current_file);
 
 			// reset for the next file
-			match = 0;
 			k = 0;
+			match = 0;
 			fclose(fp);
 		}
 		globfree(&current_glob);
@@ -209,7 +201,7 @@ int main(int argc, char *argv[])
 	int or_flag = 0;
 	const char* config_path = "/home/thomas/.logfind";
 	char** patterns = malloc(GLOB_MAX*sizeof(char*));
-	char** terms = malloc(sizeof(char**));
+	char** terms = malloc(SEARCH_TERMS_MAX*sizeof(char**));
 
 	term_count = build_cli(argc, argv, &or_flag, &terms);
 	check(term_count > 0, "Usage: %s <term1> <term2> ...", argv[0]);
@@ -224,11 +216,6 @@ int main(int argc, char *argv[])
 
 	// perform search
 	search_files(patterns, pattern_count, terms, term_count, or_flag);
-
-	for (i = 0; i < pattern_count; i++)
-		debug("patterns[%d] @ %p = %s", i, patterns[i], patterns[i]);		
-	for (i = 0; i < term_count; i++)
-		debug("terms[%d] @ %p = %s", i, terms[i], terms[i]);
 
 	// clean up
 	for (i = 0; i < pattern_count; i++)
