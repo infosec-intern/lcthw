@@ -3,10 +3,11 @@ EX=logfind
 
 all:
 	make ${EX}
+	./logfind clear
 	./logfind clear clean
 	./logfind clear clean -o
-	./logfind sync clear clean
-	./logfind sync clear clean -o
+	./logfind complete clear clean
+	./logfind complete clear clean -o
 
 clean:
 	rm -f ${EX} *.o
