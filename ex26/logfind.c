@@ -48,8 +48,10 @@ int load_config(const char* config_path, char** globs)
 		tokenized = strtok(buffer, "\n");
 		if (tokenized == NULL || tokenized[0] == '\0')
 			continue;
+		// allocate size of tokenized - up to max line length
 		globs[count] = malloc(strnlen(tokenized, LINE_LENGTH)*sizeof(char));
-		strncpy(globs[count], tokenized, strnlen(tokenized, LINE_LENGTH));
+		// leave space for a null byte just in case
+		strncpy(globs[count], tokenized, strnlen(tokenized, LINE_LENGTH-1));
 		count++;
 	}
 
@@ -214,11 +216,19 @@ int main(int argc, char *argv[])
 	// perform search
 	search_files(patterns, pattern_count, terms, term_count, or_flag);
 
-error:	// fallthrough
+	// clean up
 	for (i = 0; i < pattern_count; i++)
 		if (patterns[i]) free(patterns[i]);
 	for (i = 0; i < term_count; i++)
 		if (terms[i]) free(terms[i]);
 
 	return 0;
+
+error:
+	for (i = 0; i < pattern_count; i++)
+		if (patterns[i]) free(patterns[i]);
+	for (i = 0; i < term_count; i++)
+		if (terms[i]) free(terms[i]);
+
+	return 1;
 }
