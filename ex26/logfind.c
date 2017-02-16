@@ -52,6 +52,7 @@ int load_config(const char* config_path, char** globs)
 		globs[count] = malloc(strnlen(tokenized, LINE_LENGTH)*sizeof(char));
 		// leave space for a null byte just in case
 		strncpy(globs[count], tokenized, strnlen(tokenized, LINE_LENGTH-1));
+		globs[count][LINE_LENGTH-1] = '\0';
 		count++;
 	}
 
@@ -92,6 +93,7 @@ int build_cli(int argc, char* argv[], int* or_flag, char*** terms_addr)
 	int count = 0;
 	char** terms = malloc(SEARCH_TERMS_MAX*sizeof(char**));
 	int opt;
+	int opt_len = 0;
 
 	// examine each argument looking for our "OR" flag
 	while((opt = getopt(argc, argv, "-o")) != -1) {
@@ -103,8 +105,10 @@ int build_cli(int argc, char* argv[], int* or_flag, char*** terms_addr)
 			default:
 				if (count >= SEARCH_TERMS_MAX)
 					break;
+				opt_len = strnlen(optarg, LINE_LENGTH)-1;
 				terms[count] = malloc(strnlen(optarg, LINE_LENGTH)*sizeof(char));
-				strncpy(terms[count], optarg, strnlen(optarg, LINE_LENGTH));
+				strncpy(terms[count], optarg, opt_len);
+				terms[count][opt_len] = '\0';
 				count++;
 				break;
 		}
