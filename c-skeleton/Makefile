@@ -1,5 +1,5 @@
 # may need to be adjusted depending on platform
-CFLAGS=-g -02 -Wall -Wextra -Isrc -rdynamic -DNDEBUG $(OPFLAGS)
+CFLAGS=-g -Wall -Wextra -Isrc -rdynamic -DNDEBUG $(OPFLAGS)
 LIBS=-ldl $(OPTLIBS)
 # only takes effect if the builder doesn't give a PREFIX setting
 PREFIX?=/usr/local
