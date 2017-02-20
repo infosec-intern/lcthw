@@ -1,6 +1,6 @@
 # may need to be adjusted depending on platform
-CFLAGS=-g -Wall -Wextra -Isrc -rdynamic -DNDEBUG $(OPFLAGS)
-LIBS=-ldl $(OPTLIBS)
+CFLAGS=-g -Wall -Isrc -rdynamic -DNDEBUG -ldl $(OPFLAGS)
+LIBS=$(OPTLIBS)
 # only takes effect if the builder doesn't give a PREFIX setting
 PREFIX?=/usr/local
 
@@ -14,19 +14,17 @@ TEST_SRC=$(wildcard tests/*_tests.c)
 TESTS=$(patsubst %.c,%,$(TEST_SRC))
 
 # holds the ultimate target to build
-TARGET=build/liblchtw.a
+TARGET=build/liblcthw.so
 SO_TARGET=$(patsubst %.a,%.so,$(TARGET))
 
 # The Target Build
 all: $(TARGET) $(SO_TARGET) tests
 
-dev: CFLAGS=-g -Wall -Isrc -Wall -Wextra $(OPTFLAGS)
+dev: CFLAGS=-g -Wall -Isrc -Wall $(OPTFLAGS)
 dev: all
 
 $(TARGET): CFLAGS += -fPIC
 $(TARGET): build $(OBJECTS)
-	ar rcs $@ $(OBJECTS)
-	ranlib $@
 
 $(SO_TARGET): $(TARGET) $(OBJECTS)
 	$(CC) -shared -o $@ $(OBJECTS)
