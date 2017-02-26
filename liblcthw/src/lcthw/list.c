@@ -3,11 +3,16 @@
 
 List* List_create()
 {
-	return calloc(1, sizeof(List));
+	List* list = calloc(1, sizeof(List));
+	check(list, "Could not create new list");
+	return list;
+error:
+	return NULL;
 }
 
 void List_destroy(List* list)
 {
+	check(list, "Can't destory a NULL list");
 	LIST_FOREACH(list, first, next, cur) {
 		if (cur->prev) {
 			free(cur->prev);
@@ -15,13 +20,18 @@ void List_destroy(List* list)
 	}
 	free(list->last);
 	free(list);
+error:
+	return;
 }
 
 void List_clear(List* list)
 {
+	check(list, "Can't clear a NULL list");
 	LIST_FOREACH(list, first, next, cur) {
 		free(cur->value);
 	}
+error:
+	return;
 }
 
 void List_clear_destroy(List* list)
