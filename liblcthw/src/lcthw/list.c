@@ -42,6 +42,9 @@ void List_clear_destroy(List* list)
 
 void List_push(List* list, void* value)
 {
+	check(list, "Can't push to a NULL list");
+	check(value != NULL, "List_push: value cannot be NULL");
+
 	// set node to the last element in the list
 	ListNode* node = calloc(1, sizeof(ListNode));
 	check_mem(node);
@@ -68,6 +71,8 @@ error:
 
 void* List_pop(List* list)
 {
+	check(list, "Can't pop from a NULL list");
+
 	// remove last element in list
 	ListNode* node = list->last;
 	return node != NULL ? List_remove(list, node) : NULL;
@@ -75,6 +80,9 @@ void* List_pop(List* list)
 
 void List_unshift(List* list, void* value)
 {
+	check(list, "Can't unshift a NULL list");
+	check(value != NULL, "List_unshift: value cannot be NULL");
+
 	// set node to the first element in the list
 	ListNode* node = calloc(1, sizeof(ListNode));
 	check_mem(node);
@@ -101,6 +109,8 @@ error:
 
 void* List_shift(List* list)
 {
+	check(list, "Can't shift a NULL list");
+
 	// remove first element in list
 	ListNode* node = list->first;
 	return node != NULL ? List_remove(list, node) : NULL;
@@ -108,10 +118,12 @@ void* List_shift(List* list)
 
 void* List_remove(List* list, ListNode* node)
 {
+	check(list, "Can't remove from a NULL list");
+
 	void* result = NULL;
 
 	check(list->first && list->last, "List is empty.");
-	check(node, "node can't be NULL");
+	check(node, "List_remove: node can't be NULL");
 
 	if (node == list->first && node == list->last) {
 		// if node is only element in list, zero it out
