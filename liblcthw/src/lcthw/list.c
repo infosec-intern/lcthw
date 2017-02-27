@@ -166,3 +166,38 @@ error:
 	return result;
 }
 
+void List_copy(List* src, List* dst)
+{
+	// Copy src list into dst list
+	return NULL;
+}
+
+void List_join(List* src, List* dst)
+{
+	// Join two lists together with src becoming the tail of dst
+	return NULL;
+}
+
+List** List_split(List* list, void* value)
+{
+	// Split the list into several lists at value
+	return NULL;
+}
+
+void List_reverse(List* list)
+{
+	// Reverse the list in-place
+	return NULL;
+}
+
+void List_print(List* list)
+{
+	// Print a diagram of the linked list
+	if (list) {
+		LIST_FOREACH(list, first, next, cur) {
+			printf("[%s] -> ", cur->value);
+		}
+	}
+	// end on NULL or print only NULL for empty
+	printf("[NULL]\n");
+}

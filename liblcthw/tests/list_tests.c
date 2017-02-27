@@ -89,6 +89,23 @@ char* test_shift()
 	return NULL;
 }
 
+char* test_print()
+{
+	// test print empty list
+	List_print(list);
+
+	// test print full list
+	List_unshift(list, test1);
+	List_unshift(list, test2);
+	List_unshift(list, test3);
+
+	mu_assert(List_count(list) == 3, "Wrong count on push.");
+	
+	List_print(list);
+
+	return NULL;
+}
+
 char* all_tests()
 {
 	mu_suite_start();
@@ -98,6 +115,7 @@ char* all_tests()
 	mu_run_test(test_unshift);
 	mu_run_test(test_remove);
 	mu_run_test(test_shift);
+	mu_run_test(test_print);
 	mu_run_test(test_destroy);
 
 	return NULL;
