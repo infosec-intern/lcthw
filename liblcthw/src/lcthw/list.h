@@ -25,7 +25,7 @@ void List_clear(List* list);
 void List_clear_destroy(List* list);
 
 #define List_count(A) ((A)->count >= 0 ? (A)->count : NULL)		// count invariant ?
-#define List_first(A) ((A)->first != NULL ? (A)->first->value : NULL)
+#define List_first(A) ((A)->first != NULL && (A)->count > 0 ? (A)->first->value : NULL)
 #define List_last(A) ((A)->last != NULL ? (A)->last->value : NULL)
 
 void List_push(List* list, void* value);
