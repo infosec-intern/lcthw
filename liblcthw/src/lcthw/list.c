@@ -36,8 +36,12 @@ error:
 
 void List_clear_destroy(List* list)
 {
+	check(list, "Can't clear a NULL list");
 	List_clear(list);
 	List_destroy(list);
+
+error:
+	return;
 }
 
 void List_push(List* list, void* value)
