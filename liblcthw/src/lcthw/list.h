@@ -5,6 +5,7 @@
 
 struct ListNode;
 
+// element in the linked list
 typedef struct ListNode {
 	struct ListNode* next;
 	struct ListNode* prev;
@@ -13,8 +14,8 @@ typedef struct ListNode {
 
 // container for linked ListNode structs
 typedef struct List {
-	int count;
-	ListNode* first;
+	int count;			// cannot be < 0
+	ListNode* first;	// cannot be NULL when count > 0
 	ListNode* last;
 } List;
 
@@ -23,7 +24,7 @@ void List_destroy(List* list);
 void List_clear(List* list);
 void List_clear_destroy(List* list);
 
-#define List_count(A) ((A)->count)
+#define List_count(A) ((A)->count >= 0 ? (A)->count : NULL)		// count invariant ?
 #define List_first(A) ((A)->first != NULL ? (A)->first->value : NULL)
 #define List_last(A) ((A)->last != NULL ? (A)->last->value : NULL)
 

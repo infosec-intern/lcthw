@@ -76,6 +76,9 @@ void* List_pop(List* list)
 	// remove last element in list
 	ListNode* node = list->last;
 	return node != NULL ? List_remove(list, node) : NULL;
+
+error:
+	return NULL;
 }
 
 void List_unshift(List* list, void* value)
@@ -114,6 +117,9 @@ void* List_shift(List* list)
 	// remove first element in list
 	ListNode* node = list->first;
 	return node != NULL ? List_remove(list, node) : NULL;
+
+error:
+	return NULL;
 }
 
 void* List_remove(List* list, ListNode* node)
