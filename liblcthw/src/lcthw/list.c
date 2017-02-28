@@ -205,11 +205,38 @@ error:
 	return NULL;
 }
 
-List** List_split(List* list, void* value)
+List** List_split(List* list, char* sentinel)
 {
 	// Split the list into several lists at value
+	// Converts sentinel into an integer 
 	check(list, "Can't split a NULL list");
 	List** set;
+	int i = 0;
+	ListNode* node = calloc(1, sizeof(ListNode));
+
+	LIST_FOREACH(list, first, next, cur) {
+		// still not safe - will fix later
+		if (strncmp(cur->value, sentinel, 20) == 0) {
+			// generate a new list
+			*(set + i) = List_create();
+			// set the current node as the last link in our list
+			// sentinel is the end of our split
+			(*(set + i))->last = cur;
+			// set beginning of current list to temporary node
+			(*(set + i))->first = node;
+			// use a temporary node to save the beginning of our next list
+			node = cur->next;
+			// modify list count and set count
+			(*(set + i))->count++;
+			i++;
+		}
+	}
+	
+	int j = 0;
+	for (j = 0; j < i; j++) {
+		printf("List %d: ", i);
+		List_print(*(set + i));
+	}
 
 	return set;
 error:

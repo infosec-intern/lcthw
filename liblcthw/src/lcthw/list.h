@@ -35,7 +35,7 @@ void* List_shift(List* list);
 void* List_remove(List* list, ListNode* node);
 List* List_duplicate(List* src);
 List* List_join(List* src, List* dst);
-List** List_split(List* list, void* value);
+List** List_split(List* list, char* sentinel);
 void List_reverse(List* list);
 void List_print(List* list);
 
