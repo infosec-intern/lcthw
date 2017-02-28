@@ -122,6 +122,7 @@ void* List_shift(List* list)
 	ListNode* node = list->first;
 	return node != NULL ? List_remove(list, node) : NULL;
 
+	// fallthrough
 error:
 	return NULL;
 }
@@ -166,21 +167,52 @@ error:
 	return result;
 }
 
-void List_copy(List* src, List* dst)
+List* List_duplicate(List* src)
 {
 	// Copy src list into dst list
+	check(src, "Can't duplicate a NULL list");
+	
+	List* dst = List_create();
+
+	LIST_FOREACH(src, first, next, cur) {
+		List_push(dst, cur->value);
+	}
+	return dst;
+
+error:
 	return NULL;
 }
 
-void List_join(List* src, List* dst)
+List* List_join(List* src, List* dst)
 {
 	// Join two lists together with src becoming the tail of dst
+	check(src, "Can't join NULL to list");
+	check(dst, "Can't join list to NULL");
+
+	List* head = List_duplicate(dst);
+	List* tail = List_duplicate(src);
+
+	head->last->next = tail->first;
+	tail->first->prev = head->last;
+
+	// manually bump list length up
+	int i = 0;
+	for(i = 0; i < List_count(tail); i++)
+		head->count++;
+
+	return head;
+error:
 	return NULL;
 }
 
 List** List_split(List* list, void* value)
 {
 	// Split the list into several lists at value
+	check(list, "Can't split a NULL list");
+	List** set;
+
+	return set;
+error:
 	return NULL;
 }
 
