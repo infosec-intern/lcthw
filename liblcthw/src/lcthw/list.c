@@ -139,3 +139,15 @@ void* List_remove(List* list, ListNode* node)
 error:
 	return result;
 }
+
+void List_print(List* list)
+{
+	// Print a diagram of the linked list
+	if (list) {
+		LIST_FOREACH(list, first, next, cur) {
+			printf("[%s] -> ", (char*) cur->value);
+		}
+	}
+	// end on NULL or print only NULL for empty
+	printf("[NULL]\n");
+}
